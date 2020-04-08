@@ -2,13 +2,13 @@ package common
 
 import (
 	"github.com/spf13/cobra"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"os"
 	"path/filepath"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -19,6 +19,7 @@ type ClientOptions struct {
 	Namespace  string
 	Kubeconfig string
 	*kubernetes.Clientset
+	client.Client
 }
 
 func AddClientFlags(command *cobra.Command, options ClientOptions) {
@@ -53,11 +54,18 @@ func (clientOptions *ClientOptions) InitClient(kubeconf string) error {
 	if err != nil {
 		return err
 	}
+	var k8sClient client.Client
+
+	k8sClient, err = client.New(config, client.Options{})
+	if err != nil {
+		return err
+	}
 
 	clientSet, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return err
 	}
 	clientOptions.Clientset = clientSet
+	clientOptions.Client = k8sClient
 	return nil
 }
